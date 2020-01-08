@@ -17,21 +17,28 @@ Spent:
 
 * 2020-01-06: 10:00, 10:30
 * 2020-01-07: 9:00, 10:00
-
+* 2020-01-08: 10:30, 11:00
+ 
 """
 
 import time
+from typing import Callable
 
 
 class GlobalIdError(Exception): pass
+
+class OutOfIdsError(GlobalIdError): pass
 
 
 class GlobalIdBase:
 
     """
-    A guaranteed globally unique id system.
+    A guaranteed globally unique id system. Ish.
 
     # TODO: explain usage
+    Arguments:
+    
+    The node id as a globally-unique integer 0 <= id <= 1023.
 
     """
 
@@ -39,60 +46,54 @@ class GlobalIdBase:
     SEQUENCE_BITS = 17
     NODE_ID_BITS = 10
 
-    def __init__(self):
-        self._last_sequence = 0
-        self._last_second = 0
+    def __init__(self, node_id: int, time: Callable[[], float] = time.time):
+        if node_id > 2 ** cls.NODE_ID_BITS - 1:
+            raise ValueError(f"node id greater than expected: {node_id}")
 
-    def timestamp(self) -> int:
-        """Return timestamp since the epoch in milliseconds."""
-        raise NotImplementedError
+        self._node_id = node_id
+        self._time = time
 
-    def node_id(self) -> int:
-        """Return the node id as a globally-unique integer 0 <= id <= 1023."""
-        raise NotImplementedError
+        # we don't want to emit any ids for the current second, 
+        # since we don't know the sequence for it, so we consider it exhausted
+        # TODO: should last_now be an argument, so we can wait an arbitrary time?
+        self._last_now = self._time()
+        self._last_sequence = 2 ** cls.SEQUENCE_BITS - 1
+
+    #@staticmethod
+    #def _time() -> float:
+        #"""Return the time since the epoch."""
+        #return time.time()
 
     def get_id(self) -> int:
-        now = self.timestamp()
-        second = now // 1000
+        now = self._time()
+
+        if self._last_now > now:
+            raise OutOfIdsError(f"clock moved backwards")
+
+        second = int(now)
+
+        if second > 2 ** cls.TIMESTAMP_BITS - 1:
+            raise GlobalIdError(f"maximum seconds since epoch exceeded: {second}")
 
         if self._last_sequence >= 2 ** cls.SEQUENCE_BITS - 1:
-            if self._last_second == second:
-                raise GlobalIdError("ran out of ids for this second")
+            if int(self._last_now) == second:
+                raise OutOfIdsError(f"ran out of ids for this second: {second}")
             self._last_sequence = 0
         else:
             self._last_sequence += 1
 
         self._last_second = second
 
-        return self._make_id(second, self._last_sequence, self.node_id())
+        return self._make_id(second, self._last_sequence, self._node_id)
 
     @classmethod
     def _make_id(cls, timestamp: int, sequence: int, node_id: int) -> int:
-        # TODO: docstring
-
-        assert timestamp < 2 ** cls.TIMESTAMP_BITS
-        assert sequence < 2 ** cls.SEQUENCE_BITS
-        assert node_id < 2 ** cls.NODE_ID_BITS
-
         id = timestamp
         id <<= cls.SEQUENCE_BITS
         id |= sequence
         id <<= cls.NODE_ID_BITS
         id |= node_id
-
         return id
 
 
-class GlobalId(GlobalIdBase):
-
-    def __init__(self, node_id: int):
-        super().__init__()
-        self._node_id = node_id
-
-    @staticmethod
-    def timestamp() -> int:
-        return int(time.time() * 1000)
-
-    def node_id(self):
-        return self._node_id
-
+# TODO: wrapper 
