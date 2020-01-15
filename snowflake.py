@@ -18,82 +18,126 @@ Spent:
 * 2020-01-06: 10:00, 10:30
 * 2020-01-07: 9:00, 10:00
 * 2020-01-08: 10:30, 11:00
- 
+
 """
 
 import time
-from typing import Callable
+from typing import Tuple
 
 
 class GlobalIdError(Exception): pass
 
-class OutOfIdsError(GlobalIdError): pass
+class OutOfIds(GlobalIdError): pass
+
+class ClockError(GlobalIdError): pass
 
 
-class GlobalIdBase:
+class GlobalId:
 
     """
     A guaranteed globally unique id system. Ish.
 
     # TODO: explain usage
     Arguments:
-    
+
     The node id as a globally-unique integer 0 <= id <= 1023.
 
     """
 
-    TIMESTAMP_BITS = 37
+    TIME_PART_BITS = 37
     SEQUENCE_BITS = 17
     NODE_ID_BITS = 10
 
-    def __init__(self, node_id: int, time: Callable[[], float] = time.time):
-        if node_id > 2 ** cls.NODE_ID_BITS - 1:
-            raise ValueError(f"node id greater than expected: {node_id}")
-
+    def __init__(
+        self,
+        node_id: int,
+        subnode_id: int = 0,
+        subnode_count: int = 1,
+    ):
+        if node_id > 2 ** self.NODE_ID_BITS - 1:
+            raise ValueError(f"node_id greater than expected: {node_id}")
+        if node_id < 0:
+            raise ValueError(f"node_id must be a non-negative integer: {node_id}")
         self._node_id = node_id
-        self._time = time
 
-        # we don't want to emit any ids for the current second, 
+        if subnode_count < 0:
+            raise ValueError(f"subnode_count must be a non-negative integer")
+        if not (0 <= subnode_id < subnode_count):
+            raise ValueError(f"subnode_ide must be an integer in [0, subnode_count)")
+
+        self._subnode_id = subnode_count
+        self._subnode_count = subnode_count
+
+        # we don't want to emit any ids for the current second,
         # since we don't know the sequence for it, so we consider it exhausted
-        # TODO: should last_now be an argument, so we can wait an arbitrary time?
-        self._last_now = self._time()
-        self._last_sequence = 2 ** cls.SEQUENCE_BITS - 1
+        self._last_now = self.time()
+        self._last_sequence = 2 ** self.SEQUENCE_BITS - 1
 
-    #@staticmethod
-    #def _time() -> float:
-        #"""Return the time since the epoch."""
-        #return time.time()
+    @staticmethod
+    def time() -> float:
+        """Return the time since the epoch."""
+        return time.time()
 
     def get_id(self) -> int:
-        now = self._time()
+        """Return a new id.
 
-        if self._last_now > now:
-            raise OutOfIdsError(f"clock moved backwards")
+        Raises:
+            GlobalIdError
+        """
+        return self._pack_id(*self._get_id())
+
+    def _get_id(self) -> Tuple[int, int, int]:
+        """Return a new id as a (time_part, sequence, node_id) tuple,
+        advancing the generator state as needed.
+
+        """
+        now = self.time()
+
+        time_part, sequence = self._next(
+            now, self._last_now, self._last_sequence,
+            self._subnode_id, self._subnode_count,
+        )
+
+        self._last_now = now
+        self._last_sequence = sequence
+
+        return time_part, sequence, self._node_id
+
+    @classmethod
+    def _next(
+            cls,
+            now: float,
+            last_now: float,
+            last_sequence: int,
+            subnode_id: int,
+            subnode_count: int,
+        ) -> Tuple[int, int]:
+        """Starting from the previous state, return the next (time_part, sequence)."""
+
+        if last_now > now:
+            raise ClockError(f"clock moved backwards")
 
         second = int(now)
 
-        if second > 2 ** cls.TIMESTAMP_BITS - 1:
-            raise GlobalIdError(f"maximum seconds since epoch exceeded: {second}")
+        if second > 2 ** cls.TIME_PART_BITS - 1:
+            raise OutOfIds(f"maximum seconds since epoch exceeded: {second}")
 
-        if self._last_sequence >= 2 ** cls.SEQUENCE_BITS - 1:
-            if int(self._last_now) == second:
-                raise OutOfIdsError(f"ran out of ids for this second: {second}")
-            self._last_sequence = 0
+        if last_sequence >= 2 ** cls.SEQUENCE_BITS - 1:
+            if int(last_now) == second:
+                raise OutOfIds(f"ran out of ids for this second: {second}")
+            sequence = subnode_id
         else:
-            self._last_sequence += 1
+            sequence = last_sequence + subnode_count
 
-        self._last_second = second
-
-        return self._make_id(second, self._last_sequence, self._node_id)
+        return second, sequence
 
     @classmethod
-    def _make_id(cls, timestamp: int, sequence: int, node_id: int) -> int:
-        id = timestamp
+    def _pack_id(cls, time_part: int, sequence: int, node_id: int) -> int:
+        """Pack a time_part, sequence, node_id into an int."""
+        id = time_part
         id <<= cls.SEQUENCE_BITS
         id |= sequence
         id <<= cls.NODE_ID_BITS
         id |= node_id
         return id
 
-
-# TODO: wrapper 
