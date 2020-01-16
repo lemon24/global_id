@@ -9,13 +9,13 @@ test: clean-pyc
 	pytest -v
 
 coverage: clean-pyc
-	pytest --cov=snowflake -v
+	pytest --cov=global_id -v
 	coverage html
 
 cov: coverage
 
 typing: clean-pyc
-	mypy --strict snowflake.py
+	mypy --strict global_id.py
 
 clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
