@@ -113,7 +113,7 @@ class Node:
         if not (0 <= subnode_id < subnode_count):
             raise ValueError(f"subnode_ide must be an integer in [0, subnode_count)")
 
-        self._subnode_id = subnode_count
+        self._subnode_id = subnode_id
         self._subnode_count = subnode_count
 
         # we don't want to emit any ids for the current second,
