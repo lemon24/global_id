@@ -102,14 +102,14 @@ class Node:
     def __init__(
         self, node_id: int, subnode_id: int = 0, subnode_count: int = 1,
     ):
-        if node_id > 2 ** self.node_id_bits - 1:
+        if node_id.bit_length() > self.node_id_bits:
             raise ValueError(f"node_id greater than expected: {node_id}")
         if node_id < 0:
             raise ValueError(f"node_id must be a non-negative integer: {node_id}")
         self._node_id = node_id
 
-        if subnode_count < 0:
-            raise ValueError(f"subnode_count must be a non-negative integer")
+        if subnode_count <= 0:
+            raise ValueError(f"subnode_count must be a positive integer")
         if not (0 <= subnode_id < subnode_count):
             raise ValueError(f"subnode_ide must be an integer in [0, subnode_count)")
 
@@ -119,7 +119,7 @@ class Node:
         # we don't want to emit any ids for the current second,
         # since we don't know the sequence for it, so we consider it exhausted
         self._last_now = self.time()
-        self._last_sequence = 2 ** self.sequence_bits - 1
+        self._last_sequence = 2 ** self.sequence_bits
 
     @staticmethod
     def time() -> float:
@@ -171,16 +171,17 @@ class Node:
             raise ClockError(f"clock moved backwards")
 
         second = int(now) - cls.time_part_epoch
-
-        if second > 2 ** cls.time_part_bits - 1:
+        if second.bit_length() > cls.time_part_bits:
             raise OutOfIds(f"maximum seconds since epoch exceeded: {second}")
 
-        sequence = last_sequence + subnode_count
+        last_second = int(last_now) - cls.time_part_epoch
 
-        if sequence >= 2 ** cls.sequence_bits - 1:
-            if int(last_now) == second:
+        if last_second != second:
+            return second, 0
+
+        sequence = last_sequence + subnode_count
+        if sequence.bit_length() > cls.sequence_bits:
                 raise OutOfIds(f"ran out of ids for this second: {second}")
-            sequence = subnode_id
 
         return second, sequence
 
