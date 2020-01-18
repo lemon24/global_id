@@ -14,11 +14,11 @@ class FakeTimeMixin:
     def time(self):
         return self.now
 
-    def exhaust(self):
+    def exhaust(self, get_id=lambda n: n.get_id()):
         def exhaust_sequence():
             while True:
                 try:
-                    yield self._get_id()
+                    yield get_id(self)
                 except OutOfIds:
                     break
 
@@ -70,9 +70,16 @@ def args_items_ids(argvalue):
 )
 @pytest.mark.parametrize("node_id", list(range(2 ** 3)))
 def test_tiny_node_tuple_ids(node_id, args, expected_ids):
-    actual = TinyNode(node_id, *args).exhaust()
+    actual = TinyNode(node_id, *args).exhaust(lambda n: n._get_id())
     expected = [
         [(time_part, sequence, node_id) for time_part, sequence in id_list]
         for id_list in expected_ids
     ]
     assert actual == expected
+
+
+def test_tiny_node_int_ids():
+    assert TinyNode(2, 0, 1).exhaust() == [
+        [0b000010, 0b001010, 0b010010, 0b011010],
+        [0b100010, 0b101010, 0b110010, 0b111010],
+    ]
