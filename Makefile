@@ -9,7 +9,7 @@ test: clean-pyc
 	pytest -v
 
 coverage: clean-pyc
-	pytest --cov=global_id -v
+	pytest --cov=global_id --cov=test_global_id -v
 	coverage html
 
 cov: coverage
