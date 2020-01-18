@@ -71,6 +71,10 @@ class OutOfIds(GlobalIdError):
     pass
 
 
+class OutOfSeconds(GlobalIdError):
+    pass
+
+
 class ClockError(GlobalIdError):
     pass
 
@@ -172,16 +176,17 @@ class Node:
 
         second = int(now) - cls.time_part_epoch
         if second.bit_length() > cls.time_part_bits:
-            raise OutOfIds(f"maximum seconds since epoch exceeded: {second}")
+            raise OutOfSeconds(f"maximum seconds since epoch exceeded: {second}")
 
         last_second = int(last_now) - cls.time_part_epoch
 
         if last_second != second:
-            return second, 0
+            sequence = subnode_id
+        else:
+            sequence = last_sequence + subnode_count
 
-        sequence = last_sequence + subnode_count
         if sequence.bit_length() > cls.sequence_bits:
-                raise OutOfIds(f"ran out of ids for this second: {second}")
+            raise OutOfIds(f"ran out of ids for this second: {second}")
 
         return second, sequence
 
