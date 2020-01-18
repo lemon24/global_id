@@ -56,6 +56,7 @@ TODO: snowflake
 """
 
 import time
+import math
 import datetime
 from typing import Tuple
 
@@ -171,14 +172,16 @@ class Node:
     ) -> Tuple[int, int]:
         """Starting from the previous state, return the next (time_part, sequence)."""
 
-        if last_now > now:
+        if now < last_now:
             raise ClockError(f"clock moved backwards")
+        if now < cls.time_part_epoch:
+            raise ClockError(f"current time behind node epoch")
 
-        second = int(now) - cls.time_part_epoch
+        second = math.floor(now) - cls.time_part_epoch
         if second.bit_length() > cls.time_part_bits:
             raise OutOfSeconds(f"maximum seconds since epoch exceeded: {second}")
 
-        last_second = int(last_now) - cls.time_part_epoch
+        last_second = math.floor(last_now) - cls.time_part_epoch
 
         if last_second != second:
             sequence = subnode_id

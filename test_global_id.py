@@ -33,6 +33,9 @@ class FakeTimeMixin:
         return list(exhaust_seconds())
 
 
+class FakeTimeNode(FakeTimeMixin, Node): pass
+
+
 class TinyNode(FakeTimeMixin, Node):
     time_part_bits = 1
     sequence_bits = 2
