@@ -58,7 +58,14 @@ TODO: snowflake
 import time
 import math
 import datetime
-from typing import Tuple
+from typing import Tuple, ClassVar, TYPE_CHECKING
+
+# Final appears in the typing module only in Python 3.8, and we don't want
+# to force people to install typing_extensions (mypy always depends on it).
+if TYPE_CHECKING:  # pragma: no cover
+    from typing_extensions import Final
+else:
+    Final = "Final"
 
 
 # TODO: better exception names + docstrings
@@ -89,18 +96,18 @@ class Node:
     
     Args:
         node_id (int): The node id, in range(1024).
-        subnode_id (int): TODO: text
-        subnode_count (int): TODO: text
+        subnode_id (int): The subnode id, in range(subnode_count).
+        subnode_count (int): The subnode count, must be positive.
 
     """
 
     # TODO: account for some desync
 
-    time_part_bits = 37
-    sequence_bits = 17
-    node_id_bits = 10
+    time_part_bits: ClassVar = 37
+    sequence_bits: ClassVar = 17
+    node_id_bits: ClassVar = 10
 
-    time_part_epoch = int(
+    time_part_epoch: ClassVar = int(
         datetime.datetime(2020, 1, 1).replace(tzinfo=datetime.timezone.utc).timestamp()
     )
 
@@ -112,7 +119,7 @@ class Node:
                 f"node_id must be a non-negative integer lower than "
                 f"{2 ** self.node_id_bits - 1}, got: {node_id}"
             )
-        self._node_id = node_id
+        self._node_id: Final = node_id
 
         if subnode_count <= 0:
             raise ValueError(
@@ -124,8 +131,8 @@ class Node:
                 f"subnode_count, got: {subnode_id}"
             )
 
-        self._subnode_id = subnode_id
-        self._subnode_count = subnode_count
+        self._subnode_id: Final = subnode_id
+        self._subnode_count: Final = subnode_count
 
         # we don't want to emit any ids for the current second,
         # since we don't know the sequence for it, so we consider it exhausted
