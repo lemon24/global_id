@@ -115,3 +115,42 @@ def test_tiny_node_int_ids():
         [0b000010, 0b001010, 0b010010, 0b011010],
         [0b100010, 0b101010, 0b110010, 0b111010],
     ]
+
+
+def test_default_subnode_args():
+    assert TinyNode(7).get_all() == TinyNode(7, 0, 1).get_all()
+
+
+def test_init_errors():
+    with pytest.raises(ValueError):
+        Node(-1)
+    Node(0)
+    Node(1023)
+    with pytest.raises(ValueError):
+        Node(1024)
+
+    with pytest.raises(ValueError):
+        Node(0, subnode_count=-1)
+    with pytest.raises(ValueError):
+        Node(0, subnode_count=0)
+
+    with pytest.raises(ValueError):
+        Node(0, subnode_id=-1, subnode_count=1)
+    Node(0, subnode_id=0, subnode_count=1)
+    with pytest.raises(ValueError):
+        Node(0, subnode_id=1, subnode_count=1)
+
+    with pytest.raises(ValueError):
+        Node(node_id=0, subnode_id=-1, subnode_count=2)
+    Node(node_id=0, subnode_id=0, subnode_count=2)
+    Node(node_id=0, subnode_id=1, subnode_count=2)
+    with pytest.raises(ValueError):
+        Node(node_id=0, subnode_id=2, subnode_count=2)
+
+
+# TODO: test time_part_epoch
+# TODO: test clock errors (clock moved backwards, clock behind epoch)
+# TODO: test there are no ids for the first second
+# TODO: test a bunch of real ids, including edges
+# TODO: test a bunch of real ids with subnodes
+# TODO: test default time()

@@ -107,16 +107,22 @@ class Node:
     def __init__(
         self, node_id: int, subnode_id: int = 0, subnode_count: int = 1,
     ):
-        if node_id.bit_length() > self.node_id_bits:
-            raise ValueError(f"node_id greater than expected: {node_id}")
-        if node_id < 0:
-            raise ValueError(f"node_id must be a non-negative integer: {node_id}")
+        if node_id < 0 or node_id.bit_length() > self.node_id_bits:
+            raise ValueError(
+                f"node_id must be a non-negative integer lower than "
+                f"{2 ** self.node_id_bits - 1}, got: {node_id}"
+            )
         self._node_id = node_id
 
         if subnode_count <= 0:
-            raise ValueError(f"subnode_count must be a positive integer")
+            raise ValueError(
+                f"subnode_count must be a positive integer, got: {subnode_count}"
+            )
         if not (0 <= subnode_id < subnode_count):
-            raise ValueError(f"subnode_ide must be an integer in [0, subnode_count)")
+            raise ValueError(
+                f"subnode_id must be a non-negative integer lower than "
+                f"subnode_count, got: {subnode_id}"
+            )
 
         self._subnode_id = subnode_id
         self._subnode_count = subnode_count
