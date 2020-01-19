@@ -1,6 +1,11 @@
 """
 A node in a system that generates ids guaranteed to be globally unique.
 
+Based on the same idea as Twitter Snowflake:
+
+* https://blog.twitter.com/engineering/en_us/a/2010/announcing-snowflake.html
+* https://github.com/twitter-archive/snowflake/tree/snowflake-2010
+
 The system is composed of a fixed number of nodes, represented by a numeric id.
 Each node runs one process serving ids. Each node knows its id at startup 
 and that id never changes for the node.
@@ -48,11 +53,6 @@ Subnodes
 TODO: subnodes
 
 
-Acknowledgements
-----------------
-
-TODO: snowflake
-
 """
 
 import time
@@ -66,9 +66,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from typing_extensions import Final
 else:
     Final = "Final"
-
-
-# TODO: better exception names + docstrings
 
 
 class GlobalIdError(Exception):
