@@ -118,4 +118,7 @@ if __name__ == "__main__":
     else:
         process_count = multiprocessing.cpu_count()
 
-    do_benchmark(addr, process_count)
+    try:
+        do_benchmark(addr, process_count)
+    except KeyboardInterrupt:
+        print("interrupted", file=sys.stderr)

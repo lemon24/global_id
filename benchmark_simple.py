@@ -1,24 +1,50 @@
+"""
+Measure how many ids/second a Node can generate.
+
+"""
 import time
 
 from global_id import Node, GlobalIdError
 
-node = Node(0)
 
-result_count = {}
-error_count = {}
+def do_requests(node):
+    """Call node.get_id() as fast as possible, forever.
 
-while len(result_count) < 5:
-    # use the same time to make sure we're aligned
-    second = int(node.time())
+    Yields:
+        tuple(int, int): (ok count, error count) tuples, roughly every second.
+
+    """
+    start = time.monotonic()
+
+    ok_error_counts = [0, 0]
+    while True:
+        try:
+            node.get_id()
+            status = 0
+        except GlobalIdError:
+            status = 1
+
+        ok_error_counts[status] += 1
+
+        end = time.monotonic()
+        if end - start > 1:
+            yield ok_error_counts
+            ok_error_counts = [0, 0]
+
+            start = end
+
+
+def do_benchmark():
+    node = Node(0)
+
+    for ok_count, error_count in do_requests(node):
+        print(f"ok: {ok_count}, error: {error_count}")
+
+
+if __name__ == "__main__":
+    import sys
 
     try:
-        node.get_id()
-        result_count[second] = result_count.get(second, 0) + 1
-    except GlobalIdError:
-        error_count[second] = error_count.get(second, 0) + 1
-
-print("second results errors")
-for second in sorted(result_count):
-    print(second, result_count[second], error_count.get(second, 0))
-
-# TODO: why isn't the first second all errors, though?
+        do_benchmark()
+    except KeyboardInterrupt:
+        print("interrupted", file=sys.stderr)
