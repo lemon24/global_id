@@ -12,6 +12,13 @@ It is *not* production ready in any way, and has at least the following issues:
 * a client may not get the id it was waiting for due to lost UDP packets
   (possible fixes: use a connection-oriented protocol, client retries)
 
+* the generated ids can be sniffed; may not necessarily be an issue, 
+  since anyone that knows how id generation works can guess ids 
+  generated at any point in the past
+  
+* going further, an attacker could send clients duplicate ids on purpose
+  (possible fix: sign the response)
+
 Requests look like::
 
     | 0 (8 bits) |
