@@ -22,4 +22,3 @@ for second in sorted(result_count):
     print(second, result_count[second], error_count.get(second, 0))
 
 # TODO: why isn't the first second all errors, though?
-
