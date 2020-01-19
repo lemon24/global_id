@@ -3,6 +3,10 @@ from datetime import datetime, timedelta
 from global_id import Node, GlobalIdError, OutOfIds, OutOfSeconds, ClockError
 
 
+def as_seconds(*args, **kwargs):
+    return (datetime(*args, **kwargs) - datetime(1970, 1, 1)).total_seconds()
+
+
 class FakeTimeMixin:
 
     initial_now = -1
@@ -164,7 +168,7 @@ def test_default_epoch():
 
     node = FakeTimeNode(0)
 
-    node.now = (datetime(2020, 1, 1) - datetime(1970, 1, 1)).total_seconds() + 40
+    node.now = as_seconds(2020, 1, 1, second=40)
     time_part, _, _ = node._get_id()
     assert time_part == 40
 
@@ -229,5 +233,46 @@ def test_default_time(monkeypatch):
     assert time_part == 11
 
 
-# TODO: test a bunch of real ids, including edges
+def to_id(time_part, sequence, node_id):
+    return int(f"{time_part:037b}{sequence:017b}{node_id:010b}", 2)
+
+
+def test_get_id():
+    class FakeTimeNode(FakeTimeMixin, Node):
+        initial_now = as_seconds(2020, 1, 10, second=11, microsecond=987654)
+
+    node = FakeTimeNode(123)
+
+    with pytest.raises(OutOfIds):
+        node.get_id()
+
+    node.now = as_seconds(2020, 1, 10, second=11, microsecond=999999)
+    with pytest.raises(OutOfIds):
+        node.get_id()
+
+    node.now = as_seconds(2020, 1, 10, second=12)
+    assert node.get_id() == to_id(9 * 24 * 3600 + 12, 0, 123)
+
+    node.now = as_seconds(2020, 1, 10, second=12, microsecond=100)
+    assert node.get_id() == to_id(9 * 24 * 3600 + 12, 1, 123)
+
+    node.now = as_seconds(2020, 1, 10, second=12, microsecond=200)
+    for _ in range(2 ** 17 - 3):
+        node.get_id()
+
+    node.now = as_seconds(2020, 1, 10, second=12, microsecond=300)
+    assert node.get_id() == to_id(9 * 24 * 3600 + 12, 2 ** 17 - 1, 123)
+
+    node.now = as_seconds(2020, 1, 10, second=12, microsecond=400)
+    with pytest.raises(OutOfIds):
+        node.get_id()
+
+    node.now = as_seconds(2020, 1, 10, second=12, microsecond=999999)
+    with pytest.raises(OutOfIds):
+        node.get_id()
+
+    node.now = as_seconds(2020, 1, 10, second=13)
+    assert node.get_id() == to_id(9 * 24 * 3600 + 13, 0, 123)
+
+
 # TODO: test a bunch of real ids with subnodes
