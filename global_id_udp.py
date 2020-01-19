@@ -1,6 +1,6 @@
 """
 Simple UDP request-response server wrapper over global_id.Node, mainly for
-showing Node can generate 100K+ ids/second in an environment similar to 
+seeing how many ids/second it can generate in an environment similar to
 the real world.
 
 It is *not* production ready in any way, and has at least the following issues:
@@ -63,8 +63,12 @@ def run_server(addr, *args):
     """Bind to addr and serve id requests forever.
 
     The socket has the SO_REUSEPORT option, so multiple servers can serve
-    requests on the same port. On Linux, this should spread the requests
-    evely across the multiple servers; https://lwn.net/Articles/542629/
+    requests on the same port. On Linux, each server should get a separate
+    socker descriptor with a dedicated receive buffer, and the requests
+    should be spread evenly across them:
+
+    * https://blog.cloudflare.com/how-to-receive-a-million-packets/
+    * https://lwn.net/Articles/542629/
 
     Args:
         addr: Passed to socket.bind(addr).
