@@ -1,6 +1,6 @@
 import pytest
-
-from global_id import Node, GlobalIdError, OutOfIds, OutOfSeconds
+from datetime import datetime, timedelta
+from global_id import Node, GlobalIdError, OutOfIds, OutOfSeconds, ClockError
 
 
 class FakeTimeMixin:
@@ -50,10 +50,6 @@ class FakeTimeMixin:
                     break
 
         return list(all())
-
-
-class FakeTimeNode(FakeTimeMixin, Node):
-    time_part_epoch = 0
 
 
 class TinyNode(FakeTimeMixin, Node):
@@ -121,13 +117,16 @@ def test_default_subnode_args():
     assert TinyNode(7).get_all() == TinyNode(7, 0, 1).get_all()
 
 
-def test_init_errors():
+@pytest.mark.parametrize("Node, max_node_id", [(Node, 1023), (TinyNode, 7)])
+def test_init_errors(Node, max_node_id):
+    """Passing the wrong values to Node() must raise ValueError."""
+
     with pytest.raises(ValueError):
         Node(-1)
     Node(0)
-    Node(1023)
+    Node(max_node_id)
     with pytest.raises(ValueError):
-        Node(1024)
+        Node(max_node_id + 1)
 
     with pytest.raises(ValueError):
         Node(0, subnode_count=-1)
@@ -148,9 +147,87 @@ def test_init_errors():
         Node(node_id=0, subnode_id=2, subnode_count=2)
 
 
-# TODO: test time_part_epoch
-# TODO: test clock errors (clock moved backwards, clock behind epoch)
-# TODO: test there are no ids for the first second
+def test_epoch():
+    class FakeTimeNode(FakeTimeMixin, Node):
+        time_part_epoch = 1000
+
+    node = FakeTimeNode(0)
+
+    node.now = 1005
+    time_part, _, _ = node._get_id()
+    assert time_part == 5
+
+
+def test_default_epoch():
+    class FakeTimeNode(FakeTimeMixin, Node):
+        pass
+
+    node = FakeTimeNode(0)
+
+    node.now = (datetime(2020, 1, 1) - datetime(1970, 1, 1)).total_seconds() + 40
+    time_part, _, _ = node._get_id()
+    assert time_part == 40
+
+
+def test_clock_behind_epoch():
+    class FakeTimeNode(FakeTimeMixin, Node):
+        time_part_epoch = 1000
+
+    node = FakeTimeNode(0)
+
+    node.now = 999
+    with pytest.raises(ClockError):
+        node.get_id()
+
+
+def test_clock_moved_backwards():
+    class FakeTimeNode(FakeTimeMixin, Node):
+        time_part_epoch = 1000
+
+    node = FakeTimeNode(0)
+
+    node.now = 1010
+    # shouldn't raise
+    node.get_id()
+
+    node.now = 1009
+    with pytest.raises(ClockError):
+        node.get_id()
+
+
+def test_no_ids_the_first_second():
+    class FakeTimeNode(FakeTimeMixin, Node):
+        time_part_epoch = 1000
+        initial_now = 1010.2
+
+    node = FakeTimeNode(0)
+
+    with pytest.raises(OutOfIds):
+        node.get_id()
+
+    node.now = 1010.999
+    with pytest.raises(OutOfIds):
+        node.get_id()
+
+    node.now = 1011
+    # shouldn't raise
+    node.get_id()
+
+
+def test_default_time(monkeypatch):
+    class MyNode(Node):
+        time_part_epoch = 1000
+
+    monkeypatch.setattr("time.time", lambda: 1010.2)
+
+    node = MyNode(0)
+    assert node.time() == 1010.2
+
+    monkeypatch.setattr("time.time", lambda: 1011.2)
+
+    time_part, _, _ = node._get_id()
+    assert time_part == 11
+
+
 # TODO: test a bunch of real ids, including edges
 # TODO: test a bunch of real ids with subnodes
-# TODO: test default time()
