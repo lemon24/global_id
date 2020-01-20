@@ -1,10 +1,15 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from global_id import Node, GlobalIdError, OutOfIds, OutOfSeconds, ClockError
 
 
 def as_seconds(*args, **kwargs):
-    return (datetime(*args, **kwargs) - datetime(1970, 1, 1)).total_seconds()
+    """Construct an UTC datetime from the arguments, and return its timestamp.
+
+    https://docs.python.org/3/library/datetime.html#datetime.datetime.timestamp
+
+    """
+    return datetime(*args, tzinfo=timezone.utc, **kwargs).timestamp()
 
 
 class FakeTimeMixin:
@@ -256,6 +261,7 @@ def test_get_id():
     node.now = as_seconds(2020, 1, 10, second=12, microsecond=100)
     assert node.get_id() == to_id(9 * 24 * 3600 + 12, 1, 123)
 
+    # slower than the rest, should go in a different test
     node.now = as_seconds(2020, 1, 10, second=12, microsecond=200)
     for _ in range(2 ** 17 - 3):
         node.get_id()
@@ -275,4 +281,33 @@ def test_get_id():
     assert node.get_id() == to_id(9 * 24 * 3600 + 13, 0, 123)
 
 
-# TODO: test a bunch of real ids with subnodes
+def test_get_id_subnodes():
+    class FakeTimeNode(FakeTimeMixin, Node):
+        initial_now = as_seconds(2020, 1, 10, second=11, microsecond=987654)
+
+    nodes = [FakeTimeNode(321, i, 3) for i in range(3)]
+
+    for node in nodes:
+        with pytest.raises(OutOfIds):
+            node.get_id()
+
+    for node in nodes:
+        node.now = as_seconds(2020, 1, 10, second=12)
+
+    assert nodes[1].get_id() == to_id(9 * 24 * 3600 + 12, 1, 321)
+    assert nodes[2].get_id() == to_id(9 * 24 * 3600 + 12, 2, 321)
+    assert nodes[0].get_id() == to_id(9 * 24 * 3600 + 12, 0, 321)
+
+    assert nodes[2].get_id() == to_id(9 * 24 * 3600 + 12, 5, 321)
+    assert nodes[0].get_id() == to_id(9 * 24 * 3600 + 12, 3, 321)
+    assert nodes[1].get_id() == to_id(9 * 24 * 3600 + 12, 4, 321)
+
+    # slower than the rest, should go in a different test
+    for _ in range(2 ** 17 // 3 - 2):
+        for node in nodes:
+            node.get_id()
+
+    assert nodes[0].get_id() == to_id(9 * 24 * 3600 + 12, 2 ** 17 - 2, 321)
+    assert nodes[1].get_id() == to_id(9 * 24 * 3600 + 12, 2 ** 17 - 1, 321)
+    with pytest.raises(OutOfIds):
+        assert nodes[2].get_id()
