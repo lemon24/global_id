@@ -4,7 +4,7 @@ I ran the benchmarks on a [t3a.nano instance](https://aws.amazon.com/ec2/instanc
 with 2 virtual CPUs, on Ubuntu 18.04.
 
 I ran the benchmarks with both CPython (the reference Python implementation) 
-and PyPy (an alternative, JITed, implementation).
+and PyPy (a JITed Python implementation).
 
 
 ## Results
@@ -15,8 +15,6 @@ process.
 Both interpreters managed to exhaust the ids that can be generated 
 in a second (~131K); after that, PyPy got significantly more OutOfIds errors,
 hinting that it would generate more ids if maximum sequence would be increased.
-
----
 
 The UDP benchmark consists of multiple server processes serving IDs for a
 node, and multiple client processes requesting IDs. The server processes
@@ -30,7 +28,7 @@ process / CPU (i.e. 2 server processes).
 On CPython, the server *did not* manage to generate 100K ids/second.
 I suspect this is because it can't send/receive packets fast enough,
 although I did manage to reach 100K requests/second with a simple echo server,
-the code itself being slow is probably an issue too.
+so the code itself being slow is probably an issue too.
 
 On PyPy, the server *did* generate over 100K ids/second (~110K).
 
