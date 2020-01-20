@@ -22,10 +22,45 @@ To run the static type checker:
 
     make typing
 
+
 ## Performance
 
 I managed to generate over 100K ids/second with a simple UDP server
-using PyPy on a t3a.nano instance; see [performance.md](./performance.md) 
+using PyPy on a t3a.nano instance; see [performance.md](./performance.md)
 for details.
 
+
+## Answers to the problem questions
+
+> 1. Please describe your solution to get_id and why it is correct i.e. guaranteed globally unique.
+
+See [global_id.py](./global_id.py) docstring (Id structure).
+
+> 2. Please explain how your solution achieves the desired performance i.e. 100,000 or more requests per second per node. How did you verify this?
+
+See [performance.md](./performance.md).
+
+> 3. Please enumerate possible failure cases and describe how your solution correctly handles each case.
+
+See the [global_id.py](./global_id.py) docstring (Assumptions).
+
+> How did you verify correctness? Some example cases:
+>
+> * How do you manage uniqueness after a node crashes and restarts?
+
+See the [global_id.py](./global_id.py) docstring (Assumptions).
+
+> * How do you manage uniqueness after the entire system fails and restarts?
+
+See the [global_id.py](./global_id.py) docstring (Assumptions).
+
+> * How do you handle software defects?
+
+Automated tests:
+
+* Tests for the implementation with smaller id sizes, for which we check
+  exhaustively all the ids that can be generated.
+* Tests that spot-check the real-size implementation.
+
+Static type checking for the core implementation.
 

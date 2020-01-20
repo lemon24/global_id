@@ -57,14 +57,11 @@ Assume that any node will not receive more than 100,000 requests per second.
 Please write answers to the following discussion questions and include them in your solution as comments:
 
 1. Please describe your solution to get_id and why it is correct i.e. guaranteed globally unique.
-1. Please explain how your solution achieves the desired performance i.e. 100,000 or more requests per second per node. How did you verify this?
-1. Please enumerate possible failure cases and describe how your solution correctly handles each case. How did you verify correctness? Some example cases:
-
-How do you manage uniqueness after a node crashes and restarts?
-
-How do you manage uniqueness after the entire system fails and restarts?
-
-How do you handle software defects?
+2. Please explain how your solution achieves the desired performance i.e. 100,000 or more requests per second per node. How did you verify this?
+3. Please enumerate possible failure cases and describe how your solution correctly handles each case. How did you verify correctness? Some example cases:
+  * How do you manage uniqueness after a node crashes and restarts?
+  * How do you manage uniqueness after the entire system fails and restarts?
+  * How do you handle software defects?
 
 We will evaluate your solution for correctness, simplicity, clarity, and robustness. Solutions with minimal coordination and persistent storage are best. Solutions that provide benchmarks for performance and tests to verify correctness are best.
 

@@ -140,7 +140,7 @@ class Node:
 
     """
 
-    # TODO: account for some desync
+    # TODO: account for some desync (make max_drift part of the API)
 
     time_part_bits: ClassVar = 37
     sequence_bits: ClassVar = 17
@@ -195,9 +195,10 @@ class Node:
         """Return a new id as a (time_part, sequence, node_id) tuple,
         advancing the generator state as needed.
 
-        """
-        # TODO: explain why this is not in get_id
+        Eases testing by returning almost the same result as get_id(),
+        but in a easier to understand format.
 
+        """
         now = self.time()
 
         time_part, sequence = self._next(
