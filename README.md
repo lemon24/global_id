@@ -22,7 +22,10 @@ To run the static type checker:
 
     make typing
 
+## Performance
 
-
+I managed to generate over 100K ids/second with a simple UDP server
+using PyPy on a t3a.nano instance; see [performance.md](./performance.md) 
+for details.
 
 
