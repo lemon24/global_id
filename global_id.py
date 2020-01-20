@@ -12,7 +12,6 @@ and that id never changes for the node.
 
 :class:`Node` holds the state and logic for such a node.
 
-
 Id structure
 ------------
 
@@ -36,8 +35,20 @@ at any given point in time.
 
 The maximum time, ids per second, number of nodes, and the total bit
 length of the generated ids can be adjusted by changing the 
-{time_part,sequence,node_id}_bits Node attributes.
+{time_part,sequence,node_id}_bits Node attributes. For example,
+changing time_part_bits to 34 and sequence_bits to 20 gives ids for
+~544 years at maximum ~1M ids / second / node.
 
+Subnodes
+--------
+
+To spread id generation across multiple threads/processes on the same machine,
+a node can be split up into multiple logical subnodes.
+
+This splits the sequence part evenly between the subnodes;
+the following is true for each subnode i (0 .. n-1) out of n subnodes::
+
+    sequence(subnode.get_id()) % n == i
 
 Assumptions
 -----------
@@ -45,12 +56,6 @@ Assumptions
 TODO: node id uniqueness
 
 TODO: clock synchronization
-
-
-Subnodes
---------
-
-TODO: subnodes
 
 
 """
