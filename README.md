@@ -61,5 +61,5 @@ Automated tests:
   exhaustively all the ids that can be generated.
 * Tests that spot-check the real-size implementation.
 
-Static type checking for the core implementation.
+Static type checking for the core of the implementation.
 
