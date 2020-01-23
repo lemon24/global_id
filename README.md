@@ -1,6 +1,5 @@
 Solution to an interview project: (part of) a system that generates ids
-guaranteed to be globally unique; see [problem.md](./problem.md) for
-the full problem description.
+guaranteed to be globally unique.
 
 The main implementation is in [global_id.py](./global_id.py).
 A simple UDP server wrapping it can be found in
