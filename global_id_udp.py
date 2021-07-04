@@ -71,7 +71,7 @@ def run_server(addr, *args):
 
     The socket has the SO_REUSEPORT option, so multiple servers can serve
     requests on the same port. On Linux, each server should get a separate
-    socker descriptor with a dedicated receive buffer, and the requests
+    socket descriptor with a dedicated receive buffer, and the requests
     should be spread evenly across them:
 
     * https://blog.cloudflare.com/how-to-receive-a-million-packets/
